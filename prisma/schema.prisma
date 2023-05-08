@@ -10,33 +10,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  SUBSCRIBER
+  ADMIN
+}
+
+enum Auth_types {
+  CREDENTIALS
+  OAUTH
+}
+
 model User {
   id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  Token         Token[]
+  name          String?   @db.VarChar(250)
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  role          Role      @default(SUBSCRIBER)
+  Profile       Profile?
+  Account       Account[]
+
+  @@unique([id, email])
+}
+
+model Profile {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @id @unique
+  bio       String?
+  createdAt DateTime @default(now())
 }
 
 model Account {
-  id       String @id @default(cuid())
-  userId   String
-  type     String
-  provider String
-  scope    String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider])
-}
-
-model Token {
-  id            String  @id @default(cuid())
+  aid           String     @id @default(cuid())
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId        String
-  refresh_token String? @db.Text
-  access_token  String? @db.Text
-  expires_at    Int?
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          Auth_types
+  provider      String     @db.VarChar(50)
+  access_token  String?    @db.Text
+  refresh_token String?    @db.Text
+  scope         String?
 }
